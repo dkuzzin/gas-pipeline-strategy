@@ -14,6 +14,47 @@ type ClassicStrategy struct {
 	Mode FitMode
 }
 
+func (s ClassicStrategy) ChoosePlacement(
+	length int,
+	candidates []Candidate,
+	trenchLength int,
+	tailFreeLength int,
+) (Placement, error) {
+	if err := ValidatePipeLength(length); err != nil {
+		return Placement{}, err
+	}
+
+	switch s.Mode {
+	case FirstFit, BestFit, WorstFit:
+	default:
+		return Placement{}, fmt.Errorf("unknown fit mode: %d", s.Mode)
+	}
+
+	if trenchLength < 0 || trenchLength > MaxTrenchMeters {
+		return Placement{}, fmt.Errorf("invalid trench length")
+	}
+
+	if tailFreeLength < 0 || tailFreeLength > trenchLength {
+		return Placement{}, fmt.Errorf("invalid tail length")
+	}
+
+	best, found := s.findCandidate(length, candidates)
+
+	if found {
+		if best.Start < 0 || best.Start > trenchLength-length {
+			return Placement{}, fmt.Errorf("invalid candidate position")
+		}
+
+		return Placement{
+			Start:    best.Start,
+			DigUnits: 0,
+		}, nil
+	}
+
+	// Места нет — расширяем траншею
+	return placementWithDig(length, trenchLength, tailFreeLength)
+}
+
 func (s ClassicStrategy) findCandidate(length int, candidates []Candidate) (Candidate, bool) {
 
 	var best Candidate
@@ -60,18 +101,14 @@ func placementWithDig(length int, trenchLength int, tailFreeLength int) (Placeme
 		return Placement{}, err
 	}
 
-	if trenchLength < 0 ||
-		trenchLength > MaxTrenchMeters {
+	if trenchLength < 0 || trenchLength > MaxTrenchMeters {
 		return Placement{}, fmt.Errorf("invalid trench length")
 	}
 
-	if tailFreeLength < 0 ||
-		tailFreeLength > trenchLength {
+	if tailFreeLength < 0 || tailFreeLength > trenchLength {
 		return Placement{}, fmt.Errorf("invalid tail length")
 	}
 
-	// Если труба уже помещается в хвост,
-	// копка не требуется.
 	if tailFreeLength >= length {
 		return Placement{}, fmt.Errorf("pipe fits in existing tail")
 	}
