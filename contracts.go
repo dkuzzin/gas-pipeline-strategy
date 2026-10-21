@@ -29,6 +29,7 @@ type Layout interface {
 	Remove(start, length int) error
 	Extend(unitsOf20Meters int) error
 	TrenchLength() int
+	TailFreeLength() int
 }
 
 // Размещение (Placement) — это решение стратегии относительно следующего участка трубопровода.
@@ -36,8 +37,8 @@ type Layout interface {
 // Если DigUnits == 0, то параметр Start должен совпадать с одним из предложенных вариантов начала участка.
 // Если DigUnits > 0, контроллер выполняет прокладку траншеи, начиная с конца уже существующей траншеи;
 // в этом случае параметр Start должен быть равен длине предыдущего участка траншеи.
-//
-// Значение DigUnits указывается в 20-метровых единицах.
+// 
+//Значение DigUnits указывается в 20-метровых единицах.
 type Placement struct {
 	Start    int
 	DigUnits int
@@ -46,7 +47,7 @@ type Placement struct {
 // Стратегия реализуется модулем стратегии.
 // контроллер применяет выбранный вариант размещения после его проверки.
 type Strategy interface {
-	ChoosePlacement(length int, candidates []Candidate, trenchLength int) (Placement, error)
+	ChoosePlacement(length int, candidates []Candidate, trenchLength int, TailFreeLenght int) (Placement, error)
 }
 
 // ValidatePipeLength используется модулями, которые должны отклонять некорректные вызовы.
